@@ -4,17 +4,19 @@
 # @File : AutoInstaller
 # @Project : AutoInstaller
 # @Desc :AutoInstaller
+import configparser
 import os.path
 import re
 import time
 import uuid
 
-from ovpn import get_vpn_profile
-from ppadb.client import Client as AdbClient
 from lxml import etree
-from util.logger import logger
+from ppadb.client import Client as AdbClient
+
+from ovpn import get_vpn_profile
 from select_devices import device_rec
-import configparser
+from util.logger import logger
+
 
 class AutoInstall:
     def __init__(self, device_id, data):
@@ -167,7 +169,8 @@ class AutoInstall:
         self.device.shell(
             "app_process -Djava.class.path=/data/local/tmp/yadb /data/local/tmp com.ysbing.yadb.Main -layout")
         # 下载UI树文件
-        self.device.pull("/storage/emulated/0/yadb_layout_dump.xml", os.path.join(os.getcwd(), "caches", f"{uuid_}.xml"))
+        self.device.pull("/sdcard/yadb_layout_dump.xml",
+                         os.path.join(os.getcwd(), "caches", f"{uuid_}.xml"))
         # 解析UI树文件
         return etree.parse(os.path.join(os.getcwd(), "caches", f"{uuid_}.xml"))
 
@@ -287,6 +290,25 @@ class AutoInstall:
         li = f"{subscript_x} {subscript_y}"
         return li
 
+    def element_find_by_text(self, text, type=True):
+        """
+        根据元素查找坐标点
+        成功返回：坐标（list）
+        失败返回：False（bool）
+        """
+        device_xml = self.get_ui_xml()
+        if type == True:
+            elements = device_xml.xpath(f"//*[@text='{text}']/@*")
+            add_profile_point = self.median_value_pro(elements)
+            return add_profile_point
+        elif type == False:
+            try:
+                elements = device_xml.xpath(f"//*[@text='{text}']/@*")
+                add_profile_point = self.median_value_pro(elements)
+                return add_profile_point
+            except:
+                return None
+
     def change_font(self):
         """
         检测更改字体
@@ -350,8 +372,30 @@ class AutoInstall:
             if "日本" in labels[0]:
                 logger.info(f"设备{self.device_id}--默认语言为日文，无需更换")
                 self.lang = self.totle_lang
+            elif "日本" in str(labels):
+                logger.info(f"设备{self.device_id}--默认语言列表有日文,无需添加")
+                if "SM-G955F" in self.device_name:
+                    pass
+                elif "SM-G950U" in self.device_name:
+                    pass
+                else:
+                    logger.error(f"设备: {self.device_id}:咱不支持的设备，请手动更换语言为:{self.totle_lang}")
             else:
-                print("123456")
+                logger.info(f"设备{self.device_id}--默认语言列表无日文,需添加")
+                if "SM-G955F" in self.device_name:
+                    pass
+                elif "SM-G950U" in self.device_name:
+                    self.element_click(comment="//*[@resource-id='com.android.settings:id/add_language']/@bounds")
+                    time.sleep(3)
+                    self.device.input_swipe(start_x=969, start_y=724, end_x=963, end_y=388, duration=300)
+                    time.sleep(3)
+                    self.element_click(comment="//*[@text='日本語']/@bounds")
+                    time.sleep(3)
+                    self.element_click(comment="//*[@text='Set as default']/@bounds")
+                    time.sleep(3)
+                    self.device.input_keyevent("HOME")
+                else:
+                    logger.error(f"设备: {self.device_id}:咱不支持的设备，请手动更换语言为:{self.totle_lang}")
 
     def add_language(self):
         """
@@ -376,6 +420,8 @@ class AutoInstall:
                 self.device.input_keyevent("HOME")
                 logger.info(f"设备{self.device_id}:已更换为英语")
         elif self.totle_lang == "CN":
+            pass
+        elif self.totle_lang == "JP":
             pass
         else:
             logger.info(f"设备{self.device_id}:暂不支持的语言")
