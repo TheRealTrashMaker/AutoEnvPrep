@@ -461,7 +461,6 @@ class AutoInstall:
         设置默认浏览器为谷歌浏览器
         :return:
         """
-        print(self.lang)
         if "CN" in self.lang or "zh" in self.lang:
             self.device.shell('am start -a android.settings.MANAGE_DEFAULT_APPS_SETTINGS')
             device_xml = self.get_ui_xml()
@@ -500,9 +499,18 @@ class AutoInstall:
             logger.info(f"设备{self.device_id}--更换浏览器完成")
         elif "JP" in self.lang or "jp" in self.lang:
             self.device.shell('am start -a android.settings.MANAGE_DEFAULT_APPS_SETTINGS')
-            device_xml = self.get_ui_xml()
-            settings = device_xml.xpath("//*[@text='Browser app']/@bounds")
-            self.device.shell("input tap 13")
+            if self.element_is_exist(comment="//*[@text='ブラウザアプリ']/@bounds"):
+                self.element_click("//*[@text='ブラウザアプリ']/@bounds")
+                logger.info(f"设备{self.device_id}--找到更换浏览器选项，正在更换浏览器")
+                device_xml = self.get_ui_xml()
+                chrome = device_xml.xpath("//*[@text='Chrome']/@bounds")
+                if chrome:
+                    self.element_click("//*[@text='Chrome']/@bounds")
+                else:
+                    logger.error(f"设备{self.device_id}--未找到chrome浏览器，请手动处理")
+            else:
+                logger.error(f"设备{self.device_id}--未找到更换浏览器选项，可能是由于设备不支持的原因")
+            logger.info(f"设备{self.device_id}--更换浏览器完成")
 
     def median_value_pro(self, number):
         if type(number) == list:
@@ -599,7 +607,7 @@ class AutoInstall:
         self.device.shell("input keyevent KEYCODE_WAKEUP")
         self.device.shell('input keyevent 187')
         try:
-            self.element_click(comment="//*[@text='全部关闭']/@bounds", type=False)
+            self.element_click(comment="//*[@resource-id='com.sec.android.app.launcher:id/clear_all_button']/@bounds", type=False)
         except:
             self.device.shell('input keyevent 187')
         self.device.shell("am force-stop net.openvpn.openvpn")
@@ -608,9 +616,7 @@ class AutoInstall:
         self.device.shell("pm clear com.android.chrome")
 
     def change_time_zone(self):
-        print(self.device_name)
         if "SM-G950U" in self.device_name:
-            print(self.device_name)
             self.change_time_zone_SM950U()
 
     def change_time_zone_SM9500(self):
@@ -629,8 +635,6 @@ class AutoInstall:
             self.element_click(comment="//*[@text='一般管理']/@bounds")
             time.sleep(3)
             self.element_click(comment="//*[@text='日付と時刻']/@bounds")
-            time.sleep(3)
-            print(type(self.device.shell("settings get global auto_time")))
             time.sleep(3)
             if "1" in self.device.shell("settings get global auto_time"):
                 self.element_click(comment="//*[@text='自動日時設定']/@bounds")
@@ -816,7 +820,7 @@ class AutoInstall:
 
     def screen_wake(self):
         """
-        唤醒/息屏设备
+        唤醒设备
         """
         self.device.shell('input keyevent KEYCODE_WAKEUP')
 
@@ -890,19 +894,19 @@ class AutoInstall:
         return result.strip()
 
     def main(self):
-        try:
-            self.software_version_ctrl()
-            self.clear_cache()
-            print(self.lang)
-            self.change_font()
-            self.change_eage()
-            self.change_vpn(self.data)
-            logger.info(f"设备{self.device_id}--全部设置完毕，可执行下一步任务")
-            return True
-        except Exception as e:
-            print(e)
-            logger.error("运行错误")
-            return False
+        # try:
+        self.software_version_ctrl()
+        self.clear_cache()
+        print(self.lang)
+        self.change_font()
+        self.change_eage()
+        self.change_vpn(self.data)
+        logger.info(f"设备{self.device_id}--全部设置完毕，可执行下一步任务")
+        return True
+        # except Exception as e:
+        #     print(e)
+        #     logger.error("运行错误")
+        #     return False
 
     def get_device_language(self):
         self.lang = self.device.shell("getprop persist.sys.locale")
@@ -911,11 +915,11 @@ class AutoInstall:
     def test(self):
         res = self.change_font()
         time.sleep(3)
-        print(res)
         self.change_time_zone()
 
 
 if __name__ == '__main__':
     data = {"vpn_url": "107.149.212.58:943", "vpn_acc": "zhang002", "vpn_pwd": "888555222"}
-    auto_ins = AutoInstall(device_id="192.168.0.22:5555", data=data)
-    auto_ins.main()
+    auto_ins = AutoInstall(device_id="192.168.0.23:5555", data=data)
+    auto_ins.screen_wake()
+    auto_ins.eage_ready()
