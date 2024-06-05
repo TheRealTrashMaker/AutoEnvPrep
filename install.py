@@ -607,7 +607,8 @@ class AutoInstall:
         self.device.shell("input keyevent KEYCODE_WAKEUP")
         self.device.shell('input keyevent 187')
         try:
-            self.element_click(comment="//*[@resource-id='com.sec.android.app.launcher:id/clear_all_button']/@bounds", type=False)
+            self.element_click(comment="//*[@resource-id='com.sec.android.app.launcher:id/clear_all_button']/@bounds",
+                               type=False)
         except:
             self.device.shell('input keyevent 187')
         self.device.shell("am force-stop net.openvpn.openvpn")
@@ -702,6 +703,11 @@ class AutoInstall:
             self.element_click(comment="//*[@text='AGREE']/@bounds")  # 点击同意
             time.sleep(3)
             self.device.input_text(data["vpn_url"])  # 输入vpn链接地址
+            print(data["vpn_url"])
+            """
+            107.148.0.101：943
+            107.148.0.101:943
+            """
             time.sleep(3)
             self.element_click(comment="//*[@text='NEXT']/@bounds")  # 点击NEXT
             time.sleep(3)
